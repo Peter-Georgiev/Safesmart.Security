@@ -2,9 +2,9 @@
 
 class Employee
 {
-    public List<string> EmployeeName { get; set; }
-
     public List<int> EmployeeID { get; set; }
+
+    public List<string> EmployeeName { get; set; }
 
     public Employee(List<string> employeeName, List<int> employeeID)
     {

@@ -2,15 +2,35 @@
 
 class Card
 {
-    public List<int> EmployeeID { get; set; }
+    private Dictionary<int, int> card = 
+        new Dictionary<int, int>();
 
-    public List<int> CardLow { get; set; }
-
-    public Card(List<int> employeeID, List<int> cardLow)
+    public void SetDict(Dictionary<int, int> dict)
     {
-        //Dictionary<int, int>() 
-        this.EmployeeID = employeeID;
+        card = dict;
+    }
 
-        this.CardLow = cardLow;
+    public void Set(int cardLow, int employeeID)
+    {
+        if (card.ContainsKey(cardLow))
+        {
+            card[cardLow] = employeeID;
+        }
+        else
+        {
+            card.Add(cardLow, employeeID);
+        }
+    }
+    
+    public int Get(int cardLow)
+    {
+        int result = int.MinValue;
+
+        if (card.ContainsKey(cardLow))
+        {
+            result = card[cardLow];
+        }
+
+        return result;
     }
 }

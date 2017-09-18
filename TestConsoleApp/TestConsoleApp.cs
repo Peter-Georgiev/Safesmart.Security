@@ -8,7 +8,7 @@ class TestConsoleApp
 {
     static void Main()
     {
-        string startSearchTimeRead = "08:20:00";
+        string startSearchTimeRead = "08:00:00";
         string endSearchTimeRead = "08:20:00";
 
         string startSearchDataRead = "01.06.2016";
@@ -35,106 +35,50 @@ class TestConsoleApp
 
         Employee employee = EmploedRead();
 
+        int count = 0;
+        foreach (var key in eventRecord.CardLow)
+        {
+            Console.WriteLine($"** {card.Get(key)}," +
+                $" {eventRecord.AriseTime[count]}," +
+                $" {eventRecord.CtrlID[count]}," +
+                $" {eventRecord.EventType[count]}");
+        }
+
+
+
         PrintConsole printResult = new PrintConsole();
 
 
 
-        foreach (var itemEven in eventRecord.CardLow)
-        {
-            if (!card.CardLow.Contains(itemEven))
-            {
-                continue;
-            }
-
-            foreach (var itemCard in card.CardLow)
-            {
-                if (itemCard != itemEven)
-                {
-                    continue;
-                }
-
-                foreach (var itemEmployeeID in employee.EmployeeID)
-                {
-
-                    if (!card.EmployeeID.Contains(itemEmployeeID))
-                    {
-                        continue;
-                    }
-
-
-
-                }
-
-
-            }
-
-
-            //Console.WriteLine(itemCard);
-            Console.WriteLine(card.CardLow);
-        }
-
-
-
         Console.WriteLine();
-        /*
-        var employeeCard = new Dictionary<string, List<Employee>>();
-
-        foreach (var kvp in employee)
-        {
-            if (!employeeCard.ContainsKey(kvp.Key))
-            {
-                employeeCard[kvp.Key] = new List<Employee>();
-            }
-            
-            foreach (var kvpCard in card)
-            {
-
-                if (kvp.Value == kvpCard.Key)
-                {
-                    employeeCard[kvp.Key].Add(new Employee
-                    {
-                        EmployeeID = kvpCard.Value
-                    });
-                }
-            }            
-        }
-        
-
-        foreach (var kvp in employeeCard)
-        {
-            Console.WriteLine($"*Име: {kvp.Key}");
-            foreach (var item in kvp.Value)
-            {
-                Console.WriteLine("--Номер на карта: " + string.Join(", ", item.EmployeeID));
-            }
-        }
-        */
     }
 
     public static EventRecord EventRecordRead(string startSearchTime, string endSearchTime)
     {
         //query = "SELECT AriseTime, CardLow FROM EventRecord WHERE AriseTime Between #03/01/2016 00:00:00# And #04/01/2016 00:00:00#";
-        string query = "SELECT `AriseTime`, `CardLow`, `CtrlID`, `EventType` FROM `EventRecord` WHERE ((TimeValue(AriseTime) Between #" + startSearchTime + "# And #" + endSearchTime + "#))";
+        string query = "SELECT `AriseTime`, `CardLow`, `CtrlID`, `EventType` FROM `EventRecord` WHERE AriseTime Between #06/01/2017 00:00:00# And #06/06/2017 23:00:00# AND ((TimeValue(AriseTime) Between #" + startSearchTime + "# And #" + endSearchTime + "#))";
         ConnectMDB myDataTable = new ConnectMDB(query);
 
-        EventRecord eventRecord = new EventRecord(
-            myDataTable.ConnectDB()
-            .AsEnumerable()
-            .Select(r => r.Field<DateTime>("AriseTime"))
-            .ToList(),
-            myDataTable.ConnectDB()
-            .AsEnumerable()
-            .Select(r => r.Field<int>("CardLow"))
-            .ToList(),
-            myDataTable.ConnectDB()
-            .AsEnumerable()
-            .Select(r => r.Field<int>("CtrlID"))
-            .ToList(),
-            myDataTable.ConnectDB()
-            .AsEnumerable()
-            .Select(r => r.Field<byte>("EventType"))
-            .ToList()
-            );
+        EventRecord eventRecord = new EventRecord
+        {
+            CardLow = myDataTable.ConnectDB()
+                .AsEnumerable()
+                .Select(r => r.Field<int>("CardLow"))
+                .ToList(),
+            AriseTime = myDataTable.ConnectDB()
+                .AsEnumerable()
+                .Select(r => r.Field<DateTime>("AriseTime"))
+                .ToList(),
+            CtrlID = myDataTable.ConnectDB()
+                .AsEnumerable()
+                .Select(r => r.Field<int>("CtrlID"))
+                .ToList(),
+            EventType = myDataTable.ConnectDB()
+                .AsEnumerable()
+                .Select(r => r.Field<byte>("EventType"))
+                .ToList()
+        };
+
         return eventRecord;
     }
 
@@ -143,16 +87,15 @@ class TestConsoleApp
         string query = "SELECT `EmployeeID`, `CardLow` FROM `Card`";
         ConnectMDB myDataTable = new ConnectMDB(query);
 
-        Card card = new Card(
-            myDataTable.ConnectDB()
+        Card card = new Card();
+        card.SetDict(myDataTable
+            .ConnectDB()
             .AsEnumerable()
-            .Select(r => r.Field<int>("EmployeeID"))
-            .ToList(),
-            myDataTable.ConnectDB()
-            .AsEnumerable()
-            .Select(r => r.Field<int>("CardLow"))
-            .ToList()
+            .ToDictionary(
+            r => r.Field<int>("CardLow"),
+            r => r.Field<int>("EmployeeID"))
             );
+
         return card;
     }
 

@@ -48,6 +48,7 @@
     <Compile Include="EventRecord.cs" />
     <Compile Include="Employee.cs" />
     <Compile Include="Door.cs" />
+    <Compile Include="EventRecordObj.cs" />
     <Compile Include="PrintConsole.cs" />
     <Compile Include="TestConsoleApp.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

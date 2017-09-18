@@ -1,21 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 
 class EventRecord
 {
-    public List<byte> EventType { get; set; }
+    private List<int> _cardLow { get; set; }
 
-    public List<int> CardLow { get; set; }
+    public List<byte> EventType { get; set; }
 
     public List<int> CtrlID { get; set; }
 
     public List<DateTime> AriseTime { get; set; }
 
-    public EventRecord(List<DateTime> ariseTime, List<int> cardLow, List<int> ctrlID, List<byte> eventType)
+    public List<int> CardLow
     {
-        this.AriseTime = ariseTime;
-        this.CardLow = cardLow;
-        this.CtrlID = ctrlID;
-        this.EventType = eventType;
+        set
+        {
+            this._cardLow = value;
+        }
+
+        get
+        {
+            return _cardLow;
+        }
     }
 }
