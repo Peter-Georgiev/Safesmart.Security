@@ -6,7 +6,7 @@ class EventRecord
 {
     private List<int> _cardLow { get; set; }
 
-    public List<byte> EventType { get; set; }
+    public List<byte> Ordinal { get; set; }
 
     public List<int> CtrlID { get; set; }
 

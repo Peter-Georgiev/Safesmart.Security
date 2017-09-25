@@ -1,15 +1,36 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 class Employee
 {
-    public List<int> EmployeeID { get; set; }
+    Dictionary<int, string> employe = new Dictionary<int, string>();
 
-    public List<string> EmployeeName { get; set; }
-
-    public Employee(List<string> employeeName, List<int> employeeID)
+    public void SetDict(Dictionary<int, string> dict)
     {
-        this.EmployeeName = employeeName;
+        employe = dict;
+    }
 
-        this.EmployeeID = employeeID;
+    public void Set(int EmployeeID, string EmployeeName)
+    {
+        if (employe.ContainsKey(EmployeeID))
+        {
+            employe[EmployeeID] = EmployeeName;
+        }
+        else
+        {
+            employe.Add(EmployeeID, EmployeeName);
+        }
+    }
+
+    public string Get(int EmployeeID)
+    {
+        string result = String.Empty;
+
+        if (employe.ContainsKey(EmployeeID))
+        {
+            result = employe[EmployeeID];
+        }
+
+        return result;
     }
 }
