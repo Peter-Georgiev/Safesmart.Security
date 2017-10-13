@@ -9,4 +9,6 @@ class PrintList
     public string CtrlID { get; set; }
     
     public string Ordinal { get; set; }
+
+    public string DepartmentName { get; set; }
 }

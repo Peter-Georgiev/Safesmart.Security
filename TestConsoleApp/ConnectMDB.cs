@@ -49,7 +49,7 @@ class ConnectMDB
         string myConnectionString =
            @"Provider=Microsoft.Jet.OLEDB.4.0;" +
            "Data Source=" +
-           "C:\\Temp\\Safesmart\\Property2.mdb;" +
+           "C:\\Safesmart Security Platform\\database\\Property2.mdb;" +
            "Persist Security Info=True;" +
            "Jet OLEDB:Database Password=AnsonSTMake811;";
 

@@ -14,73 +14,78 @@ class TestConsoleApp
 {
     static void Main()
     {
-        //Test();
-
-
         Dictionary<int, string> doorCtrlID = new Dictionary<int, string>
         {
             { 4, "ПОРТАЛ ВЪТРЕШЕН" },
             { 3, "ПОРТАЛ" }
         };
+
         Dictionary<int, string> doorOrdinal = new Dictionary<int, string>
         {
             { 0, "ИЗХОД"},
             { 1, "ВХОД" }
         };
+        
+        string startSearchData = StartSearchData();
+        string endSearchData = EndSearchData();
+        string startSearchTime = StartSearchTime();
+        string endSearchTime = EndSearchTime();
 
-        string searchDataTime = "01.08.2017 07:55:00 - 31.08.2017 10:00:00";
+        /* TEST
+        string searchDataTime = "01.09.2017 07:55:00 - 30.09.2017 10:00:00";
         string[] mathesRegex = MatchInput(searchDataTime);
-        string startSearchData = StartSearchData();// mathesRegex[0];
-        string endSearchData = EndSearchData();// mathesRegex[1];
-        string startSearchTime = StartSearchTime();//mathesRegex[2];
-        string endSearchTime = EndSearchTime();// mathesRegex[3];
-
-        //string startSearchData = mathesRegex[0];
-        //string endSearchData = mathesRegex[1];
-        //string startSearchTime = mathesRegex[2];
-        //string endSearchTime = mathesRegex[3];
-
+        string startSearchData = mathesRegex[0];
+        string endSearchData = mathesRegex[1];
+        string startSearchTime = mathesRegex[2];
+        string endSearchTime = mathesRegex[3];
+        */
         int ordinalOptional = OrdinalOptional();
         int ctrlIDOptional = 3;
-
-
+        
+        int searchDepartment = SearchDepartment();
+        
         string searchUserName = "" //формат име фамилия презиме
             .Trim()
             .ToUpper();
 
-
         EventRecord eventRecord =
             EventRecordRead(startSearchData, endSearchData, startSearchTime, endSearchTime, ctrlIDOptional, ordinalOptional);
 
-        Card card = CardRead();
-
-        Employee employee = EmploedRead(searchUserName);
-
-        int count = 0;
+        Dictionary<int, Employee> cardEmployeeDepart = 
+            CardEmployeeDepart(searchUserName,searchDepartment);
+                
         List<PrintList> print = new List<PrintList>();
-        foreach (var person in eventRecord.CardLow)
+        
+        int index = 0;
+        foreach (var cardLow in eventRecord.CardLow)
         {
+            if (!cardEmployeeDepart.ContainsKey(cardLow))
+            {
+                index++;
+                continue;
+            }
+            
             PrintList prnName = new PrintList
             {
-                EmployeeName = employee.Get(card.Get(person)),
-                DateTime = eventRecord.AriseTime[count],
-                CtrlID = doorCtrlID[eventRecord.CtrlID[count]],
-                Ordinal = doorOrdinal[eventRecord.Ordinal[count]]
+                EmployeeName = cardEmployeeDepart[cardLow].EmployeeName,
+                DateTime = eventRecord.AriseTime[index],
+                CtrlID = doorCtrlID[eventRecord.CtrlID[index]],
+                Ordinal = doorOrdinal[eventRecord.Ordinal[index]],
+                DepartmentName = cardEmployeeDepart[cardLow].DepartmentName
             };
 
+            index++;
             print.Add(prnName);
-            count++;
         }
-
-        var printSort = print
+        
+        List<PrintList> printSort = print
         .OrderBy(name => name.EmployeeName)
-        .ThenBy(dt => dt.DateTime)
+        .ThenBy(dateTime => dateTime.DateTime)
         .ToList();
-
+        
         ExportToExcel(printSort);
-        /*count = 0;
-        using (StreamWriter wr = 
-            new StreamWriter("myfile.csv", false, Encoding.UTF8))
+        /*
+        using (StreamWriter wr = new StreamWriter("myfile.csv", false, Encoding.UTF8))
         {
             foreach (PrintList p in printSort)
             {
@@ -89,30 +94,15 @@ class TestConsoleApp
                     $"Име: {p.EmployeeName}," +
                     $"{p.DateTime}," +
                     $"{p.CtrlID}," +
-                    $"{p.Ordinal},");
+                    $"{p.Ordinal}," +
+                    $"{p.DepartmentName}");
                 wr.WriteLine(nameList);
             }
-        }*/
-
-
-        Console.WriteLine();
+        }
+        */
+        //Console.Read();
     }
 
-    public static void Test()
-    {
-        string query = "SELECT CardLow AS TableName, CtrlID AS ColumnName, Ordinal AS Db FROM INFORMATION_SCHEMA";
-
-        ConnectMDB myDataTable = new ConnectMDB(query);
-
-        var t = myDataTable
-            .ConnectDB()
-            .AsEnumerable();
-        //.ToDictionary(
-        //r => r.Field<int>("TableName"),
-        //r => r.Field<string>("EmployeeName"));
-
-        Console.WriteLine();
-    }
 
     public static string StartSearchData()
     {
@@ -182,6 +172,36 @@ class TestConsoleApp
         return ordinalOptional;
     }
 
+    public static int SearchDepartment()
+    {
+        int searchDepartment = 0;
+        while (searchDepartment == 0)
+        {
+            int lastKey = 0;
+            foreach (var kvp in Department())
+            {
+                Console.WriteLine($"Номер: {kvp.Key} за {kvp.Value}");
+                lastKey = kvp.Key;
+            }
+            Console.Write("Избери номер: ");
+            string readLineStr = Console.ReadLine();
+
+            if (!int.TryParse(readLineStr, out int readLineDigit))
+            {
+                Console.Write("Въведи число!");
+                continue;
+            }
+
+            if (!(readLineDigit > 0 && readLineDigit < lastKey + 1))
+            {
+                Console.WriteLine("Некоректно въведено число!");
+                continue;
+            }
+            searchDepartment = readLineDigit;
+        }
+        return searchDepartment;
+    }
+
     public static string ReadLineData(string readLineData)
     {
         string output = String.Empty;
@@ -221,16 +241,53 @@ class TestConsoleApp
         return regex.Value;
     }
 
+    public static Dictionary<int, Employee> CardEmployeeDepart(string searchUserName, int searchDepartment)
+    {
+        string query = "SELECT c.CardLow AS cardLow, d.DepartmentName AS dName, e.EmployeeName AS eName " +
+            "FROM ((`Employee` AS e " +
+            "INNER JOIN  `Card` AS c ON e.EmployeeID = c.EmployeeID )" +
+            "INNER JOIN `Department` AS d ON e.DepartmentID = d.DepartmentID )" +
+            $"WHERE e.DepartmentID={searchDepartment}";
+
+        if (searchUserName.Length > 0)
+        {
+            query = "SELECT c.CardLow AS cardLow, d.DepartmentName AS dName, e.EmployeeName AS eName " +
+            "FROM ((`Employee` AS e " +
+            "INNER JOIN  `Card` AS c ON e.EmployeeID = c.EmployeeID )" +
+            "INNER JOIN `Department` AS d ON e.DepartmentID = d.DepartmentID )" +
+            $"WHERE e.DepartmentID={searchDepartment} WHERE e.EmployeeName={searchUserName}";
+        }
+
+        ConnectMDB myDataTable = new ConnectMDB(query);
+        Dictionary<int, Employee> cardLowNameDepart = new Dictionary<int, Employee>();
+
+        foreach (var item in myDataTable.ConnectDB().AsEnumerable())
+        {
+            if (!cardLowNameDepart.ContainsKey(item.Field<int>("cardLow")))
+            {
+                cardLowNameDepart[item.Field<int>("cardLow")] = new Employee();
+            }
+
+            Employee employee = new Employee
+            {
+                EmployeeName = item.Field<string>("eName"),
+                DepartmentName = item.Field<string>("dName")
+            };
+            cardLowNameDepart[item.Field<int>("cardLow")] = employee;
+        }
+
+        return cardLowNameDepart;
+    }
+
     public static EventRecord EventRecordRead(string startSearchData, string endSearchData, string startSearchTime, string endSearchTime, int ctrlIDOptional, int ordinalOptional)
     {
-        string query = $"SELECT `AriseTime`, `CardLow`, `CtrlID`, `Ordinal` FROM `EventRecord` WHERE `CtrlID`={ctrlIDOptional} AND `Ordinal`={ordinalOptional} AND AriseTime Between #{startSearchData} 00:00:00# And #{endSearchData} 23:59:59# AND ((TimeValue(AriseTime) Between #{startSearchTime}# And #{endSearchTime}#)) ORDER BY `AriseTime`";
-
-        Dictionary<string, int> doorCtrlID = new Dictionary<string, int>
-        {
-            { "портал", 3 },
-            { "портал вътрешен", 4 }
-        };
-
+        string query = $"SELECT `AriseTime`, `CardLow`, `CtrlID`, `Ordinal` FROM `EventRecord` " +
+            $"WHERE `CtrlID`={ctrlIDOptional} " +
+            $"AND `Ordinal`={ordinalOptional} " +
+            $"AND AriseTime Between #{startSearchData} 00:00:00# And #{endSearchData} 23:59:59# " +
+            $"AND ((TimeValue(AriseTime) Between #{startSearchTime}# And #{endSearchTime}#)) " +
+            $"ORDER BY `AriseTime`";
+        
         ConnectMDB myDataTable = new ConnectMDB(query);
 
         EventRecord eventRecord = new EventRecord
@@ -256,44 +313,19 @@ class TestConsoleApp
         return eventRecord;
     }
 
-    public static Card CardRead()
+    public static Dictionary<int, string> Department()
     {
-        string query = "SELECT `EmployeeID`, `CardLow` FROM `Card`";
-        ConnectMDB myDataTable = new ConnectMDB(query);
-
-        Card card = new Card();
-        card.SetDict(myDataTable
-            .ConnectDB()
-            .AsEnumerable()
-            .ToDictionary(
-            r => r.Field<int>("CardLow"),
-            r => r.Field<int>("EmployeeID"))
-            );
-
-        return card;
-    }
-
-    public static Employee EmploedRead(string searchUserName)
-    {
-        string query = "SELECT `EmployeeID`, `EmployeeName` FROM `Employee` ORDER BY `EmployeeName`";
-
-        if (searchUserName.Length > 0)
-        {
-            query = $"SELECT `EmployeeID`, `EmployeeName` FROM `Employee` WHERE `EmployeeName`='{searchUserName}'";
-        }
+        string query = "SELECT `DepartmentID`, `DepartmentName` FROM `Department` ORDER BY `DepartmentID`";
 
         ConnectMDB myDataTable = new ConnectMDB(query);
 
-        Employee emploedRead = new Employee();
-        emploedRead.SetDict(myDataTable
+        Dictionary<int, string> department = myDataTable
             .ConnectDB()
             .AsEnumerable()
             .ToDictionary(
-            r => r.Field<int>("EmployeeID"),
-            r => r.Field<string>("EmployeeName"))
-            );
-
-        return emploedRead;
+            r => r.Field<int>("DepartmentID"),
+            r => r.Field<string>("DepartmentName"));
+        return department;
     }
 
     public static void ExportToExcel(List<PrintList> print)
@@ -319,6 +351,7 @@ class TestConsoleApp
             workSheet.Cells[1, "B"] = "ДАТА ЧАС";
             workSheet.Cells[1, "C"] = "ПОРТАЛ";
             workSheet.Cells[1, "D"] = "ВХОД/ИЗХОД";
+            workSheet.Cells[1, "E"] = "ОТДЕЛ";
 
             // ------------------------------------------------
             // Populate sheet with some real data from "cars" list
@@ -330,6 +363,7 @@ class TestConsoleApp
                 workSheet.Cells[row, "B"] = prn.DateTime;
                 workSheet.Cells[row, "C"] = prn.CtrlID;
                 workSheet.Cells[row, "D"] = prn.Ordinal;
+                workSheet.Cells[row, "E"] = prn.DepartmentName;
 
                 row++;
             }
